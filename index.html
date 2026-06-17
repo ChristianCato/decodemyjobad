@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decode My Job Ad: check any job ad for gendered wording</title>
+<meta name="description" content="Check whether your job ad leans masculine-coded, feminine-coded or neutral, and get plain swaps to even it out. Free, private, runs in your browser.">
+<meta name="theme-color" content="#1d1d20">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231d1d20'/%3E%3Cline x1='7' y1='16' x2='25' y2='16' stroke='white' stroke-width='2' stroke-linecap='round'/%3E%3Ccircle cx='20' cy='16' r='4' fill='white'/%3E%3C/svg%3E">
+<!-- Social sharing. Update the URLs once the domain is live, and add og-image.png (1200x630) alongside this file. -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://decodemyjobad.com/">
+<meta property="og:title" content="Decode my job ad: is your wording gender-coded?">
+<meta property="og:description" content="A free tool that checks whether your job ad leans masculine-coded, feminine-coded or neutral, then suggests plain swaps. Based on Gaucher, Friesen and Kay (2011).">
+<meta property="og:image" content="https://decodemyjobad.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Decode my job ad: is your wording gender-coded?">
+<meta name="twitter:description" content="Check whether your job ad leans masculine-coded, feminine-coded or neutral, and get plain swaps to even it out.">
+<meta name="twitter:image" content="https://decodemyjobad.com/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1d1d20;
+    --ink-soft: #54545e;
+    --ink-faint: #8c8b92;
+    --canvas: #f4f3f1;
+    --surface: #ffffff;
+    --line: #e9e8e5;
+    --line-strong: #d8d6d2;
+
+    --masc: #6a778f;
+    --masc-ink: #4b566d;
+    --masc-tint: #edeff3;
+
+    --fem: #a37e70;
+    --fem-ink: #7c5d50;
+    --fem-tint: #f3ede9;
+
+    --neutral: #6b7280;
+    --neutral-ink: #4b5563;
+    --neutral-tint: #eef0f2;
+
+    --font: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'Inter', system-ui, -apple-system, sans-serif;
+
+    --maxw: 800px;
+    --radius: 14px;
+    --shadow-sm: 0 1px 2px rgba(20,20,30,0.04);
+    --shadow-card: 0 1px 2px rgba(20,20,30,0.04), 0 14px 34px -18px rgba(20,20,30,0.22);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(120% 80% at 50% -10%, #fbfaf8 0%, var(--canvas) 46%);
+    background-attachment: fixed;
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px 40px; }
+
+  /* Header */
+  .masthead { padding: 64px 0 28px; }
+  .eyebrow {
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .eyebrow::before {
+    content: "";
+    width: 22px;
+    height: 1px;
+    background: var(--line-strong);
+  }
+  h1 {
+    font-weight: 700;
+    font-size: clamp(34px, 6vw, 50px);
+    line-height: 1.04;
+    letter-spacing: -0.028em;
+    margin: 0 0 18px;
+  }
+  .lede { font-size: 18px; color: var(--ink-soft); max-width: 56ch; margin: 0; }
+
+  /* Hero spectrum motif */
+  .hero-axis { margin: 30px 0 4px; max-width: 460px; }
+  .hero-bar {
+    position: relative;
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(90deg,
+      var(--masc) 0%, #b6bcc7 34%, #d0d0d2 48%,
+      #d0d0d2 52%, #d2c4bd 66%, var(--fem) 100%);
+    opacity: 0.9;
+  }
+  .hero-bar::after {
+    content: "";
+    position: absolute; left: 50%; top: 50%;
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--surface); border: 2px solid var(--ink);
+    transform: translate(-50%, -50%);
+  }
+  .hero-labels {
+    display: flex; justify-content: space-between;
+    margin-top: 10px;
+    font-family: var(--font); font-size: 12px; font-weight: 500; letter-spacing: 0;
+    color: var(--ink-faint);
+  }
+  .hero-labels .n { color: var(--ink-soft); }
+
+  /* Tabs */
+  .tabs { display: flex; margin: 40px 0 0; border-bottom: 1px solid var(--line); }
+  .tab {
+    appearance: none; background: none; border: 0;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    padding: 13px 0; margin-right: 30px;
+    font-family: var(--font); font-size: 16px; font-weight: 600;
+    color: var(--ink-faint); cursor: pointer; transition: color 0.15s ease;
+  }
+  .tab:hover { color: var(--ink-soft); }
+  .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+  .tab:focus-visible { outline: 2px solid var(--neutral); outline-offset: 3px; border-radius: 3px; }
+
+  .panel { padding-top: 36px; }
+  .panel[hidden] { display: none; }
+
+  /* Input */
+  .field-label { display: block; font-weight: 600; font-size: 15px; margin: 0 0 10px; }
+  .field-label .hint {
+    font-family: var(--mono); font-weight: 400; color: var(--ink-faint);
+    margin-left: 10px; font-size: 12px;
+  }
+  textarea {
+    width: 100%; min-height: 210px; resize: vertical;
+    padding: 18px 20px;
+    border: 1px solid var(--line-strong); border-radius: var(--radius);
+    background: var(--surface); color: var(--ink);
+    font-family: var(--font); font-size: 16px; line-height: 1.6;
+    box-shadow: var(--shadow-sm);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  textarea::placeholder { color: var(--ink-faint); }
+  textarea:focus-visible {
+    outline: none; border-color: var(--ink);
+    box-shadow: 0 0 0 3px rgba(29,29,32,0.08);
+  }
+
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; }
+  .btn {
+    appearance: none; border: 0; border-radius: 10px;
+    padding: 12px 24px; font-family: var(--font); font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: transform 0.08s ease, background 0.15s ease, box-shadow 0.15s ease;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--ink); color: #fff; box-shadow: 0 6px 16px -8px rgba(29,29,32,0.6); }
+  .btn-primary:hover { background: #303036; }
+  .btn-ghost { background: transparent; color: var(--ink-soft); padding: 12px 10px; }
+  .btn-ghost:hover { color: var(--ink); }
+  .btn:focus-visible { outline: 2px solid var(--neutral); outline-offset: 3px; }
+
+  .examples { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .examples .tag { font-family: var(--font); font-size: 13px; letter-spacing: 0; color: var(--ink-faint); }
+  .chip {
+    appearance: none; border: 1px solid var(--line-strong); background: var(--surface);
+    border-radius: 999px; padding: 6px 14px;
+    font-family: var(--font); font-size: 13px; color: var(--ink-soft); cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  }
+  .chip:hover { border-color: var(--ink); color: var(--ink); }
+  .chip:focus-visible { outline: 2px solid var(--neutral); outline-offset: 2px; }
+
+  /* Result */
+  .result { margin-top: 40px; opacity: 0; transform: translateY(10px); transition: opacity 0.4s ease, transform 0.4s ease; }
+  .result[hidden] { display: none; }
+  .result.shown { opacity: 1; transform: none; }
+
+  .verdict-card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 30px 30px 34px;
+    box-shadow: var(--shadow-card);
+  }
+  .verdict-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  .verdict-label {
+    font-weight: 700; font-size: clamp(23px, 4vw, 29px);
+    letter-spacing: -0.015em; margin: 0; line-height: 1.1;
+  }
+  .verdict-tag {
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 6px 12px; border-radius: 999px;
+  }
+  .tag-masc { background: var(--masc-tint); color: var(--masc-ink); }
+  .tag-fem { background: var(--fem-tint); color: var(--fem-ink); }
+  .tag-neutral { background: var(--neutral-tint); color: var(--neutral-ink); }
+  .verdict-note { color: var(--ink-soft); margin: 14px 0 0; max-width: 62ch; }
+
+  /* Meter: signature element */
+  .meter { margin-top: 32px; }
+  .meter-track {
+    position: relative; height: 14px; border-radius: 999px;
+    background: linear-gradient(90deg,
+      var(--masc) 0%, #b6bcc7 32%, #cfcfd2 47%,
+      #cfcfd2 53%, #d2c4bd 68%, var(--fem) 100%);
+    box-shadow: inset 0 1px 2px rgba(20,20,30,0.12);
+  }
+  .meter-ticks { position: absolute; inset: 0; display: flex; justify-content: space-between; padding: 0 1px; pointer-events: none; }
+  .meter-ticks i { width: 1px; height: 100%; background: rgba(255,255,255,0.5); }
+  .meter-ticks i:first-child, .meter-ticks i:last-child { background: transparent; }
+  .meter-needle {
+    position: absolute; top: -8px; bottom: -8px; left: 50%;
+    width: 2px; background: var(--ink); border-radius: 2px;
+    transform: translateX(-50%);
+    transition: left 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .meter-needle::after {
+    content: ""; position: absolute; left: 50%; top: 50%;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--surface); border: 3px solid var(--ink);
+    transform: translate(-50%, -50%);
+    box-shadow: 0 2px 6px rgba(20,20,30,0.22);
+  }
+  .meter-scale {
+    display: flex; justify-content: space-between; margin-top: 16px;
+    font-family: var(--font); font-size: 12.5px; font-weight: 500; letter-spacing: 0;
+  }
+  .meter-scale .m { color: var(--masc-ink); }
+  .meter-scale .n { color: var(--ink-soft); }
+  .meter-scale .f { color: var(--fem-ink); }
+
+  /* Counts */
+  .counts { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 30px; }
+  .count-box { border-radius: 12px; padding: 18px 20px; }
+  .count-box.masc { background: var(--masc-tint); }
+  .count-box.fem { background: var(--fem-tint); }
+  .count-num { font-family: var(--font); font-size: 30px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .count-box.masc .count-num { color: var(--masc-ink); }
+  .count-box.fem .count-num { color: var(--fem-ink); }
+  .count-cap { font-size: 13px; color: var(--ink-soft); margin-top: 7px; }
+  .word-chips { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .wc { font-family: var(--mono); font-size: 11.5px; font-weight: 500; padding: 3px 9px; border-radius: 6px; background: rgba(255,255,255,0.72); }
+  .count-box.masc .wc { color: var(--masc-ink); }
+  .count-box.fem .wc { color: var(--fem-ink); }
+  .wc-none { font-size: 13px; color: var(--ink-faint); }
+
+  /* Swaps */
+  .swaps { margin-top: 32px; }
+  .swaps-head { font-weight: 600; font-size: 15px; margin: 0 0 4px; }
+  .swaps-sub { font-size: 13px; color: var(--ink-faint); margin: 0 0 14px; }
+  .swap-list { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-sm); }
+  .swap-row {
+    display: flex; align-items: baseline; gap: 13px;
+    background: var(--surface); padding: 13px 18px;
+    border-top: 1px solid var(--line);
+    transition: background 0.12s ease;
+  }
+  .swap-row:first-child { border-top: 0; }
+  .swap-row:hover { background: #faf9f7; }
+  .swap-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; position: relative; top: 5px; }
+  .swap-dot.m { background: var(--masc); }
+  .swap-dot.f { background: var(--fem); }
+  .swap-from { font-weight: 600; min-width: 124px; flex: none; }
+  .swap-arrow { color: var(--ink-faint); flex: none; font-family: var(--mono); }
+  .swap-to { color: var(--ink-soft); }
+  .swap-to b { color: var(--ink); font-weight: 500; }
+  @media (max-width: 560px) {
+    .swap-row { flex-wrap: wrap; }
+    .swap-from { min-width: 0; }
+    .swap-arrow { display: none; }
+  }
+
+  /* Marked text */
+  .marked-head { font-weight: 600; margin: 34px 0 12px; font-size: 15px; }
+  .marked {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 24px 26px;
+    line-height: 1.9; white-space: pre-wrap; word-break: break-word;
+    box-shadow: var(--shadow-sm);
+  }
+  mark { border-radius: 4px; padding: 1px 4px; font-weight: 500; color: inherit; }
+  mark.m { background: var(--masc-tint); box-shadow: inset 0 -2px 0 var(--masc); }
+  mark.f { background: var(--fem-tint); box-shadow: inset 0 -2px 0 var(--fem); }
+
+  /* How it works */
+  .prose { max-width: 62ch; }
+  .prose h2 { font-weight: 700; font-size: 22px; letter-spacing: -0.015em; margin: 38px 0 12px; }
+  .prose h2:first-child { margin-top: 0; }
+  .prose h3 { font-weight: 600; font-size: 17px; margin: 26px 0 8px; }
+  .prose p { color: var(--ink-soft); margin: 0 0 14px; }
+  .prose ul { color: var(--ink-soft); margin: 0 0 14px; padding-left: 20px; }
+  .prose li { margin-bottom: 7px; }
+  .prose strong { color: var(--ink); font-weight: 600; }
+  .prose a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line-strong); transition: border-color 0.15s ease; }
+  .prose a:hover { border-bottom-color: var(--ink); }
+  .steps { list-style: none; counter-reset: step; padding: 0; margin: 0 0 16px; }
+  .steps li { counter-increment: step; position: relative; padding: 0 0 16px 46px; color: var(--ink-soft); }
+  .steps li::before {
+    content: counter(step); position: absolute; left: 0; top: -2px;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--ink); color: #fff;
+    font-family: var(--mono); font-size: 13px; font-weight: 500;
+    display: grid; place-items: center;
+  }
+  .callout {
+    background: var(--surface); border: 1px solid var(--line);
+    border-left: 3px solid var(--ink); border-radius: 12px;
+    padding: 22px 24px; margin: 18px 0 14px; box-shadow: var(--shadow-sm);
+  }
+  .callout h3 { margin-top: 0; }
+  .callout p:last-child { margin-bottom: 0; }
+  .keyline { display: flex; align-items: center; gap: 10px; margin: 7px 0; font-size: 14px; color: var(--ink-soft); }
+  .swatch { width: 24px; height: 13px; border-radius: 4px; flex: none; }
+  .swatch.m { background: var(--masc-tint); box-shadow: inset 0 -2px 0 var(--masc); }
+  .swatch.f { background: var(--fem-tint); box-shadow: inset 0 -2px 0 var(--fem); }
+  .ref {
+    margin-top: 30px; padding: 18px 20px; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 12px; font-size: 13.5px;
+    color: var(--ink-soft); box-shadow: var(--shadow-sm);
+  }
+  .ref .links { margin-top: 10px; display: flex; gap: 16px; flex-wrap: wrap; }
+  .ref .links a { font-family: var(--mono); font-size: 12px; }
+
+  /* Footer credit */
+  .credit {
+    max-width: var(--maxw); margin: 60px auto 0;
+    padding: 24px 24px 0; border-top: 1px solid var(--line);
+    font-size: 14px; color: var(--ink-faint);
+  }
+  .credit a { color: var(--ink-soft); text-decoration: none; border-bottom: 1px solid var(--line-strong); transition: color 0.15s ease, border-color 0.15s ease; }
+  .credit a:hover { color: var(--ink); border-bottom-color: var(--ink); }
+  .credit .cta { color: var(--ink-soft); }
+  .credit .src { display: block; margin-top: 11px; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.02em; color: var(--ink-faint); }
+
+  @media (max-width: 560px) {
+    .counts { grid-template-columns: 1fr; }
+    .examples { margin-left: 0; width: 100%; flex-wrap: wrap; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .meter-needle, .btn, .result { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Gendered wording check</p>
+    <h1>Decode my job ad</h1>
+    <p class="lede">Paste a job ad, a job detail page or a piece of social copy. See whether the wording leans masculine-coded, leans feminine-coded, or reads as neutral, then get plain swaps to even it out.</p>
+    <div class="hero-axis" aria-hidden="true">
+      <div class="hero-bar"></div>
+      <div class="hero-labels"><span>Masculine</span><span class="n">Neutral</span><span>Feminine</span></div>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button class="tab" id="tab-decoder" role="tab" aria-selected="true" aria-controls="panel-decoder">Decoder</button>
+    <button class="tab" id="tab-how" role="tab" aria-selected="false" aria-controls="panel-how">How it works</button>
+  </nav>
+
+  <!-- DECODER -->
+  <section class="panel" id="panel-decoder" role="tabpanel" aria-labelledby="tab-decoder">
+    <label class="field-label" for="input">Your copy <span class="hint">runs in your browser, nothing is uploaded</span></label>
+    <textarea id="input" placeholder="Paste your job ad or content here..." spellcheck="false"></textarea>
+
+    <div class="controls">
+      <button class="btn btn-primary" id="decode">Decode</button>
+      <button class="btn btn-ghost" id="clear">Clear</button>
+      <span class="examples">
+        <span class="tag">Try an example</span>
+        <button class="chip" data-example="masc">masculine-leaning</button>
+        <button class="chip" data-example="fem">feminine-leaning</button>
+      </span>
+    </div>
+
+    <div class="result" id="result" hidden aria-live="polite">
+      <div class="verdict-card">
+        <div class="verdict-head">
+          <h2 class="verdict-label" id="verdictLabel"></h2>
+          <span class="verdict-tag" id="verdictTag"></span>
+        </div>
+        <p class="verdict-note" id="verdictNote"></p>
+
+        <div class="meter">
+          <div class="meter-track">
+            <div class="meter-ticks"><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="meter-needle" id="needle"></div>
+          </div>
+          <div class="meter-scale">
+            <span class="m">Masculine-coded</span>
+            <span class="n">Neutral</span>
+            <span class="f">Feminine-coded</span>
+          </div>
+        </div>
+
+        <div class="counts">
+          <div class="count-box masc">
+            <div class="count-num" id="mascNum" data-target="0">0</div>
+            <div class="count-cap">masculine-coded words</div>
+            <div class="word-chips" id="mascChips"></div>
+          </div>
+          <div class="count-box fem">
+            <div class="count-num" id="femNum" data-target="0">0</div>
+            <div class="count-cap">feminine-coded words</div>
+            <div class="word-chips" id="femChips"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="swaps" id="swaps">
+        <p class="swaps-head">Swap these for neutral alternatives</p>
+        <p class="swaps-sub">Starting points, not rules. Context matters, and you don't need to change every word.</p>
+        <div class="swap-list" id="swapList"></div>
+      </div>
+
+      <p class="marked-head">Your copy, with coded words marked</p>
+      <div class="marked" id="marked"></div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="panel" id="panel-how" role="tabpanel" aria-labelledby="tab-how" hidden>
+    <div class="prose">
+      <h2>What this does</h2>
+      <p>The decoder scans your text for words that research has linked to a masculine or feminine slant. It counts how many of each it finds, tells you which way the copy leans overall, and suggests neutral swaps. The point isn't to police language, it's to show you what signal your wording is sending so you can match it to the people you want to reach.</p>
+
+      <h2>The three steps</h2>
+      <ol class="steps">
+        <li>Paste your copy into the Decoder tab. A full job ad works best, but a job detail page or a social post is fine too.</li>
+        <li>Press Decode. Every coded word gets matched and counted, and your text is marked up so you can see exactly what triggered the result.</li>
+        <li>Read the meter, then check the suggested swaps. The meter settles toward the masculine end, the feminine end, or the neutral middle.</li>
+      </ol>
+
+      <h2>How a word gets flagged</h2>
+      <p>The tool uses a fixed list of word stems drawn from the study below. It matches the start of each word, so <strong>lead</strong> catches "lead", "leader" and "leadership", and <strong>support</strong> catches "support", "supportive" and "supporting".</p>
+      <div class="keyline"><span class="swatch m"></span> Masculine-coded: words like compete, ambitious, driven, decisive, independent, dominant.</div>
+      <div class="keyline"><span class="swatch f"></span> Feminine-coded: words like collaborate, support, committed, understanding, considerate, together.</div>
+
+      <div class="callout">
+        <h3>Hang on, are you saying women can't be independent or competitive?</h3>
+        <p>No. The words aren't describing applicants, and the research makes no claim about what anyone can or can't do. It's about the word as a signal, not the trait.</p>
+        <p>Decades of cultural association have tied words like "competitive", "dominant" and "independent" to a male stereotype. When a lot of them stack up in one ad, they act as a subtle belonging cue. In the studies, women were more likely to read those roles as a poorer fit, a quiet sense of "people like me don't really work here", and rated them less appealing, regardless of how independent or competitive they actually were. The effect ran through belonging, not perceived ability. And tellingly, not one participant across the five studies consciously noticed the wording.</p>
+        <p>So a masculine-coded ad isn't insulting anyone. It's narrowing your audience by accident. Swapping a few words doesn't water the role down, it removes a signal that was filtering people out before they'd even reached the responsibilities.</p>
+      </div>
+
+      <div class="callout">
+        <h3>Doesn't labelling words "male" and "female" just reinforce the stereotype?</h3>
+        <p>It's a fair challenge. The tool isn't deciding that "caring" is female or "leader" is male. It's reflecting associations that already sit in the language, which the research measured by asking people which traits they link to each gender. Naming the pattern is what lets you decide whether to keep it.</p>
+        <p>It's also a deliberately blunt model. It reads in two directions, masculine and feminine, because that's how the original research coded the words. That binary doesn't capture how gender actually works and it won't speak to everyone, including non-binary readers. So treat the result as a read on stereotyped wording, not a statement about anyone's identity.</p>
+      </div>
+
+      <h2>Reading the verdict</h2>
+      <p>The meter compares the two counts. If they're roughly even, the copy reads as <strong>neutral</strong>. The further apart they are, the stronger the lean, up to <strong>strongly coded</strong> when one side clearly outweighs the other.</p>
+      <p>The evidence isn't symmetrical. In the research, masculine wording lowered a job's appeal for women and their sense that they'd belong, and it made even traditionally female roles more appealing to men. Feminine wording didn't push men away in the same way. So if your aim is the widest pool, neutral or lightly balanced copy tends to serve you best. If you're deliberately speaking to one audience, the meter just tells you whether your wording backs that up.</p>
+
+      <h2>What it can't do</h2>
+      <ul>
+        <li>It counts totals, not proportions. A long ad naturally trips more words than a short one, so compare like with like and read the lean alongside the counts.</li>
+        <li>It reads stems, not meaning. Words like "responsible" or "leadership" get flagged on their stem, even where they read as plain and necessary. Use your judgement.</li>
+        <li>It doesn't understand context, tone or imagery, all of which shape how an ad lands.</li>
+        <li>The word list comes from 2011 research. It's a strong, well-cited starting point, but it won't catch every kind of exclusionary language, such as age or ability cues.</li>
+        <li>A neutral score is a good signal, not a guarantee. It's one input alongside structure, benefits, and an honest read of the role.</li>
+      </ul>
+
+      <div class="ref">
+        Method based on Gaucher, D., Friesen, J., &amp; Kay, A. C. (2011). Evidence That Gendered Wording in Job Advertisements Exists and Sustains Gender Inequality. <em>Journal of Personality and Social Psychology, 101</em>(1), 109&ndash;128. All analysis happens locally in your browser. Nothing you paste is stored or sent anywhere.
+        <div class="links">
+          <a href="https://doi.org/10.1037/a0022530" target="_blank" rel="noopener">View the study (DOI) &rarr;</a>
+          <a href="https://irsj.ca/assets/papers/2011_gaucher_friesen_and_kay_evidence_that_gendered_wording_in_job_advertisements_exists_and_sustains_gender_inequality.pdf" target="_blank" rel="noopener">Read the full paper (PDF) &rarr;</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="credit">
+    <span class="cta">Want to improve your talent attraction efforts?</span> <a href="https://www.linkedin.com/in/christiancato/" target="_blank" rel="noopener">Let's talk &rarr;</a>
+    <span class="src">Method: <a href="https://doi.org/10.1037/a0022530" target="_blank" rel="noopener">Gaucher, Friesen &amp; Kay (2011)</a></span>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var MASCULINE = ["active","adventurous","aggress","ambitio","analy","assert","athlet","autonom","battle","boast","challeng","champion","compet","confident","courag","decid","decision","decisive","defend","determin","domina","dominant","driven","fearless","fight","force","greedy","head-strong","headstrong","hierarch","hostil","impulsive","independen","individual","intellect","lead","logic","objective","opinion","outspoken","persist","principle","reckless","self-confiden","self-relian","self-sufficien","selfconfiden","selfrelian","selfsufficien","stubborn","superior","unreasonab"];
+
+  var FEMININE = ["agree","affectionate","child","cheer","collab","commit","communal","compassion","connect","considerate","cooperat","co-operat","depend","emotiona","empath","feel","flatterable","gentle","honest","interpersonal","interdependen","interpersona","inter-personal","inter-dependen","inter-persona","kind","kinship","loyal","modesty","nurtur","pleasant","polite","quiet","respon","sensitiv","submissive","support","sympath","tender","together","trust","understand","warm","yield","yielding"];
+
+  var SUGGEST = {
+    "active":["hands-on","involved","engaged"],
+    "adventurous":["open to new ideas","curious"],
+    "aggress":["proactive","bold","energetic"],
+    "ambitio":["motivated","goal-focused","eager to grow"],
+    "analy":["detail-focused","good with data","evidence-led"],
+    "assert":["clear communicator","speaks up","direct"],
+    "athlet":["fit","energetic"],
+    "autonom":["self-directed","works with minimal supervision"],
+    "battle":["tackle","take on","work through"],
+    "boast":["highlight","showcase"],
+    "challeng":["demanding","varied","will stretch you"],
+    "champion":["advocate for","promote","get behind"],
+    "compet":["high-performing","results-focused","motivated to succeed"],
+    "confident":["assured","comfortable","self-assured"],
+    "courag":["bold","willing to take initiative"],
+    "decid":["makes timely choices","good judgement"],
+    "decision":["makes timely choices","good judgement"],
+    "decisive":["makes timely choices","good judgement"],
+    "defend":["stand up for","represent"],
+    "determin":["focused","sees things through","steady"],
+    "domina":["excel in","strong track record in","consistently deliver"],
+    "dominant":["excel in","strong track record in","consistently deliver"],
+    "driven":["motivated","dedicated","focused"],
+    "fearless":["willing to take risks","comfortable with the unknown"],
+    "fight":["tackle","work through","push for"],
+    "force":["ensure","encourage"],
+    "headstrong":["focused","strong-willed"],
+    "head-strong":["focused","strong-willed"],
+    "hierarch":["structure","reporting line"],
+    "independen":["self-directed","manage your own workload","work well on your own"],
+    "individual":["person","you","the right person"],
+    "intellect":["knowledgeable","thoughtful"],
+    "lead":["guide","manage","oversee","coordinate"],
+    "logic":["clear-thinking","methodical","structured"],
+    "objective":["goal","target","fair-minded"],
+    "opinion":["shares ideas","contributes views"],
+    "outspoken":["shares their views openly"],
+    "persist":["consistent","steady","sees tasks through"],
+    "principle":["values","standards"],
+    "self-confiden":["assured","comfortable"],
+    "selfconfiden":["assured","comfortable"],
+    "self-relian":["self-directed","resourceful"],
+    "selfrelian":["self-directed","resourceful"],
+    "self-sufficien":["self-directed","resourceful"],
+    "selfsufficien":["self-directed","resourceful"],
+    "superior":["excellent","strong","high-quality"],
+    "agree":["easy to work with","open to others' ideas"],
+    "cheer":["positive","upbeat"],
+    "collab":["works well with others","works across teams"],
+    "commit":["dedicated","reliable"],
+    "communal":["team-based","shared"],
+    "compassion":["caring"],
+    "connect":["builds relationships","links people across teams"],
+    "considerate":["thoughtful","attentive"],
+    "cooperat":["works well with others"],
+    "co-operat":["works well with others"],
+    "depend":["reliable","consistent"],
+    "empath":["caring","attentive to others"],
+    "gentle":["calm","measured"],
+    "interpersonal":["good people skills","works well with others"],
+    "interpersona":["good people skills","works well with others"],
+    "inter-persona":["good people skills","works well with others"],
+    "interdependen":["works closely with others"],
+    "inter-dependen":["works closely with others"],
+    "kind":["friendly","approachable"],
+    "loyal":["dedicated","reliable","stays the course"],
+    "modesty":["grounded","humble"],
+    "nurtur":["develops people","helps others grow","mentors"],
+    "pleasant":["approachable","friendly"],
+    "polite":["courteous","professional"],
+    "quiet":["calm","considered"],
+    "sensitiv":["tactful","perceptive"],
+    "support":["helps the team","works alongside others","backs the team"],
+    "sympath":["caring"],
+    "tender":["caring"],
+    "together":["as a team","jointly"],
+    "understand":["listens well","takes others' views into account"],
+    "warm":["approachable","friendly"],
+    "yield":["flexible","adaptable"],
+    "yielding":["flexible","adaptable"]
+  };
+
+  var EXAMPLES = {
+    masc: "We need an ambitious, driven self-starter to lead our sales function. The ideal candidate is a fearless, competitive individual who thrives under pressure, makes decisive calls and dominates their targets. You'll be analytical, independent and relentless in the pursuit of results, with the confidence to challenge senior stakeholders and the determination to outperform the competition.",
+    fem: "We're looking for a supportive, collaborative team player to join our community. You'll be committed to nurturing strong relationships, understanding the needs of others, and connecting people across the business. The right person is considerate, dependable and warm, with a genuine care for colleagues and a loyal, honest approach to working together."
+  };
+
+  var WORD_RE = /[A-Za-z][A-Za-z'\u2019\-]*/g;
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function matchStem(word, list) {
+    var clean = word.toLowerCase().replace(/['\u2019]/g, "");
+    var candidates = [clean].concat(clean.split("-"));
+    for (var i = 0; i < candidates.length; i++) {
+      var c = candidates[i];
+      if (!c) continue;
+      for (var j = 0; j < list.length; j++) {
+        if (c.indexOf(list[j]) === 0) return list[j];
+      }
+    }
+    return null;
+  }
+
+  function analyse(text) {
+    var mascCount = 0, femCount = 0;
+    var mascWords = {}, femWords = {};
+    var flagged = {};
+    var segments = [];
+    var last = 0;
+    var m;
+    WORD_RE.lastIndex = 0;
+    while ((m = WORD_RE.exec(text)) !== null) {
+      var word = m[0];
+      var start = m.index;
+      var lw = word.toLowerCase();
+      var type = null, stem = null;
+      var ms = matchStem(word, MASCULINE);
+      if (ms) {
+        type = "m"; stem = ms; mascCount++;
+        mascWords[lw] = (mascWords[lw] || 0) + 1;
+      } else {
+        var fs = matchStem(word, FEMININE);
+        if (fs) {
+          type = "f"; stem = fs; femCount++;
+          femWords[lw] = (femWords[lw] || 0) + 1;
+        }
+      }
+      if (type) {
+        if (!flagged[lw]) flagged[lw] = { type: type, stem: stem };
+        if (start > last) segments.push({ t: text.slice(last, start), type: null });
+        segments.push({ t: word, type: type });
+        last = start + word.length;
+      }
+    }
+    if (last < text.length) segments.push({ t: text.slice(last), type: null });
+    return { mascCount: mascCount, femCount: femCount, mascWords: mascWords, femWords: femWords, flagged: flagged, segments: segments };
+  }
+
+  function verdict(mascCount, femCount) {
+    var score = femCount - mascCount;
+    if (mascCount === 0 && femCount === 0) {
+      return { label: "No coded language found", tag: "Neutral", tagClass: "tag-neutral",
+        note: "This copy doesn't contain any words from the lexicon. That usually means it reads as neutral.", score: 0 };
+    }
+    if (score === 0) {
+      return { label: "Broadly neutral", tag: "Neutral", tagClass: "tag-neutral",
+        note: "Masculine-coded and feminine-coded words appear in roughly equal measure, so the wording sends a balanced signal.", score: 0 };
+    }
+    if (score > 3) {
+      return { label: "Strongly feminine-coded", tag: "Feminine", tagClass: "tag-fem",
+        note: "Feminine-coded wording clearly outweighs the rest. The measured effect on men applying is weak, but if you want balance, even out some of the flagged words.", score: score };
+    }
+    if (score > 0) {
+      return { label: "Leans feminine-coded", tag: "Feminine", tagClass: "tag-fem",
+        note: "There's a mild feminine lean. The effect on applications is modest, but worth knowing if you're aiming for a fully balanced read.", score: score };
+    }
+    if (score < -3) {
+      return { label: "Strongly masculine-coded", tag: "Masculine", tagClass: "tag-masc",
+        note: "Masculine-coded wording clearly dominates. In the research, women found roles worded like this less appealing and a poorer fit. The swaps below will help widen the pool.", score: score };
+    }
+    return { label: "Leans masculine-coded", tag: "Masculine", tagClass: "tag-masc",
+      note: "There's a mild masculine lean. If you want the widest possible pool, try a few of the neutral swaps below.", score: score };
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function animateCount(el, target) {
+    if (reduceMotion || target === 0) { el.textContent = target; return; }
+    var start = 0, dur = 550, t0 = null;
+    function step(ts) {
+      if (t0 === null) t0 = ts;
+      var p = Math.min(1, (ts - t0) / dur);
+      var eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(start + (target - start) * eased);
+      if (p < 1) requestAnimationFrame(step);
+      else el.textContent = target;
+    }
+    requestAnimationFrame(step);
+  }
+
+  function renderChips(container, words) {
+    container.innerHTML = "";
+    var keys = Object.keys(words).sort();
+    if (keys.length === 0) {
+      var none = document.createElement("span");
+      none.className = "wc-none";
+      none.textContent = "None found";
+      container.appendChild(none);
+      return;
+    }
+    keys.forEach(function (k) {
+      var span = document.createElement("span");
+      span.className = "wc";
+      span.textContent = words[k] > 1 ? (k + " \u00d7" + words[k]) : k;
+      container.appendChild(span);
+    });
+  }
+
+  function renderSwaps(flagged) {
+    var swaps = document.getElementById("swaps");
+    var list = document.getElementById("swapList");
+    list.innerHTML = "";
+    var rows = [];
+    Object.keys(flagged).forEach(function (word) {
+      var info = flagged[word];
+      var alts = SUGGEST[info.stem];
+      if (alts) rows.push({ word: word, type: info.type, alts: alts });
+    });
+    if (rows.length === 0) { swaps.hidden = true; return; }
+    swaps.hidden = false;
+    rows.sort(function (a, b) {
+      if (a.type !== b.type) return a.type === "m" ? -1 : 1;
+      return a.word < b.word ? -1 : 1;
+    });
+    rows.forEach(function (r) {
+      var row = document.createElement("div");
+      row.className = "swap-row";
+      var dot = document.createElement("span");
+      dot.className = "swap-dot " + r.type;
+      var from = document.createElement("span");
+      from.className = "swap-from";
+      from.textContent = r.word;
+      var arrow = document.createElement("span");
+      arrow.className = "swap-arrow";
+      arrow.textContent = "\u2192";
+      var to = document.createElement("span");
+      to.className = "swap-to";
+      to.innerHTML = r.alts.map(function (a) { return "<b>" + escapeHtml(a) + "</b>"; }).join(" \u00b7 ");
+      row.appendChild(dot); row.appendChild(from); row.appendChild(arrow); row.appendChild(to);
+      list.appendChild(row);
+    });
+  }
+
+  function needlePercent(score) {
+    var max = 7;
+    var clamped = Math.max(-max, Math.min(max, score));
+    var pct = 50 + (clamped / max) * 47;
+    return Math.max(3, Math.min(97, pct));
+  }
+
+  var input = document.getElementById("input");
+  var result = document.getElementById("result");
+  var needle = document.getElementById("needle");
+
+  function run() {
+    var text = input.value;
+    if (!text.trim()) { result.hidden = true; result.classList.remove("shown"); return; }
+    var data = analyse(text);
+    var v = verdict(data.mascCount, data.femCount);
+
+    document.getElementById("verdictLabel").textContent = v.label;
+    var tag = document.getElementById("verdictTag");
+    tag.textContent = v.tag;
+    tag.className = "verdict-tag " + v.tagClass;
+    document.getElementById("verdictNote").textContent = v.note;
+
+    animateCount(document.getElementById("mascNum"), data.mascCount);
+    animateCount(document.getElementById("femNum"), data.femCount);
+    renderChips(document.getElementById("mascChips"), data.mascWords);
+    renderChips(document.getElementById("femChips"), data.femWords);
+    renderSwaps(data.flagged);
+
+    var html = data.segments.map(function (seg) {
+      var safe = escapeHtml(seg.t);
+      if (seg.type === "m") return '<mark class="m">' + safe + '</mark>';
+      if (seg.type === "f") return '<mark class="f">' + safe + '</mark>';
+      return safe;
+    }).join("");
+    document.getElementById("marked").innerHTML = html;
+
+    needle.style.left = "50%";
+    result.hidden = false;
+    requestAnimationFrame(function () {
+      result.classList.add("shown");
+      requestAnimationFrame(function () {
+        needle.style.left = needlePercent(v.score) + "%";
+      });
+    });
+  }
+
+  document.getElementById("decode").addEventListener("click", run);
+  document.getElementById("clear").addEventListener("click", function () {
+    input.value = "";
+    result.hidden = true;
+    result.classList.remove("shown");
+    input.focus();
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll(".chip"), function (chip) {
+    chip.addEventListener("click", function () {
+      input.value = EXAMPLES[chip.getAttribute("data-example")];
+      run();
+      result.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" });
+    });
+  });
+
+  var tabs = document.querySelectorAll(".tab");
+  function selectTab(tab) {
+    Array.prototype.forEach.call(tabs, function (t) {
+      var selected = t === tab;
+      t.setAttribute("aria-selected", selected ? "true" : "false");
+      document.getElementById(t.getAttribute("aria-controls")).hidden = !selected;
+    });
+  }
+  Array.prototype.forEach.call(tabs, function (t) {
+    t.addEventListener("click", function () { selectTab(t); });
+    t.addEventListener("keydown", function (e) {
+      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+      var arr = Array.prototype.slice.call(tabs);
+      var i = arr.indexOf(t);
+      var next = e.key === "ArrowRight" ? (i + 1) % arr.length : (i - 1 + arr.length) % arr.length;
+      arr[next].focus();
+      selectTab(arr[next]);
+    });
+  });
+})();
+</script>
+</body>
+</html>
