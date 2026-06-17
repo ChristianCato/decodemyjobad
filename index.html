@@ -468,12 +468,12 @@
       </div>
 
       <h2>Reading the verdict</h2>
-      <p>The meter compares the two counts. If they're roughly even, the copy reads as <strong>neutral</strong>. The further apart they are, the stronger the lean, up to <strong>strongly coded</strong> when one side clearly outweighs the other.</p>
+      <p>The meter weighs how balanced the two sides are. A roughly even mix reads as neutral, a clear majority reads as a lean, and a heavy majority reads as strongly coded. It's the balance that counts, so a long ad isn't marked down just for using more words.</p>
       <p>The evidence isn't symmetrical. In the research, masculine wording lowered a job's appeal for women and their sense that they'd belong, and it made even traditionally female roles more appealing to men. Feminine wording didn't push men away in the same way. So if your aim is the widest pool, neutral or lightly balanced copy tends to serve you best. If you're deliberately speaking to one audience, the meter just tells you whether your wording backs that up.</p>
 
       <h2>What it can't do</h2>
       <ul>
-        <li>It counts totals, not proportions. A long ad naturally trips more words than a short one, so compare like with like and read the lean alongside the counts.</li>
+        <li>It works best on a full ad. With only a handful of coded words, the balance is easily swung, so treat short snippets as a rough read.</li>
         <li>It reads stems, not meaning. Words like "responsible" or "leadership" get flagged on their stem, even where they read as plain and necessary. Use your judgement.</li>
         <li>It doesn't understand context, tone or imagery, all of which shape how an ad lands.</li>
         <li>The word list comes from 2011 research. It's a strong, well-cited starting point, but it won't catch every kind of exclusionary language, such as age or ability cues.</li>
@@ -645,29 +645,36 @@
   }
 
   function verdict(mascCount, femCount) {
-    var score = femCount - mascCount;
-    if (mascCount === 0 && femCount === 0) {
+    var total = mascCount + femCount;
+    if (total === 0) {
       return { label: "No coded language found", tag: "Neutral", tagClass: "tag-neutral",
-        note: "This copy doesn't contain any words from the lexicon. That usually means it reads as neutral.", score: 0 };
+        note: "Nothing flagged here, so this reads as neutral." };
     }
-    if (score === 0) {
-      return { label: "Broadly neutral", tag: "Neutral", tagClass: "tag-neutral",
-        note: "Masculine-coded and feminine-coded words appear in roughly equal measure, so the wording sends a balanced signal.", score: 0 };
+    if (mascCount === femCount) {
+      return { label: "Broadly balanced", tag: "Neutral", tagClass: "tag-neutral",
+        note: "An even mix of both, so this reads as neutral." };
     }
-    if (score > 3) {
-      return { label: "Strongly feminine-coded", tag: "Feminine", tagClass: "tag-fem",
-        note: "Feminine-coded wording clearly outweighs the rest. The measured effect on men applying is weak, but if you want balance, even out some of the flagged words.", score: score };
+    var masc = mascCount > femCount;
+    var majority = Math.max(mascCount, femCount) / total;
+    var diff = Math.abs(mascCount - femCount);
+    var strong = majority > 0.72 && diff >= 5 && total >= 5;
+
+    if (majority <= 0.58) {
+      return { label: "Broadly balanced", tag: "Neutral", tagClass: "tag-neutral",
+        note: "Close to even, so this reads as neutral." };
     }
-    if (score > 0) {
-      return { label: "Leans feminine-coded", tag: "Feminine", tagClass: "tag-fem",
-        note: "There's a mild feminine lean. The effect on applications is modest, but worth knowing if you're aiming for a fully balanced read.", score: score };
+    if (masc) {
+      return strong
+        ? { label: "Strongly masculine-coded", tag: "Masculine", tagClass: "tag-masc",
+            note: "Heavily masculine. Women tend to find roles worded this way less appealing, so the swaps below are worth a look." }
+        : { label: "Leans masculine-coded", tag: "Masculine", tagClass: "tag-masc",
+            note: "A bit more masculine than feminine. To widen the pool, try a few of the swaps below." };
     }
-    if (score < -3) {
-      return { label: "Strongly masculine-coded", tag: "Masculine", tagClass: "tag-masc",
-        note: "Masculine-coded wording clearly dominates. In the research, women found roles worded like this less appealing and a poorer fit. The swaps below will help widen the pool.", score: score };
-    }
-    return { label: "Leans masculine-coded", tag: "Masculine", tagClass: "tag-masc",
-      note: "There's a mild masculine lean. If you want the widest possible pool, try a few of the neutral swaps below.", score: score };
+    return strong
+      ? { label: "Strongly feminine-coded", tag: "Feminine", tagClass: "tag-fem",
+          note: "Heavily feminine. For a more balanced read, even out some of the flagged words below." }
+      : { label: "Leans feminine-coded", tag: "Feminine", tagClass: "tag-fem",
+          note: "A bit more feminine than masculine. For a balanced read, try a few of the swaps below." };
   }
 
   function escapeHtml(s) {
@@ -741,11 +748,12 @@
     });
   }
 
-  function needlePercent(score) {
-    var max = 7;
-    var clamped = Math.max(-max, Math.min(max, score));
-    var pct = 50 + (clamped / max) * 47;
-    return Math.max(3, Math.min(97, pct));
+  function needlePercent(mascCount, femCount) {
+    var total = mascCount + femCount;
+    if (total === 0) return 50;
+    var a = 1.5; // smoothing: small samples sit nearer the centre
+    var pct = ((femCount + a) / (total + 2 * a)) * 100; // left edge = all masculine
+    return Math.max(4, Math.min(96, pct));
   }
 
   var input = document.getElementById("input");
@@ -783,7 +791,7 @@
     requestAnimationFrame(function () {
       result.classList.add("shown");
       requestAnimationFrame(function () {
-        needle.style.left = needlePercent(v.score) + "%";
+        needle.style.left = needlePercent(data.mascCount, data.femCount) + "%";
       });
     });
   }
